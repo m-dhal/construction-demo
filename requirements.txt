@@ -50,6 +50,7 @@ networkx
 ninja
 numpy
 oauthlib
+opencv-python==4.5.5.64
 opencv-contrib-python
 opencv-python-headless
 opt-einsum

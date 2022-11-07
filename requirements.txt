@@ -21,7 +21,7 @@ entrypoints
 etils
 flatbuffers
 fonttools
-gast==0.4.0
+gast
 gitdb
 GitPython
 google-auth
@@ -50,7 +50,7 @@ networkx
 ninja
 numpy
 oauthlib
-opencv-python==4.6.0.66
+opencv-python==4.5.5.64
 opt-einsum
 packaging
 pandas

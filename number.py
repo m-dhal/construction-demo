@@ -6,7 +6,7 @@ from matplotlib import cm
 
 import easyocr
 
-from IPython.display import Image
+# from IPython.display import Image
 
 
 import argparse

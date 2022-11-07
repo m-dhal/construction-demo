@@ -50,7 +50,7 @@ networkx
 ninja
 numpy
 oauthlib
-opencv-python
+opencv-python==4.5.5.64
 opt-einsum
 packaging
 pandas

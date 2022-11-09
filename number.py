@@ -104,37 +104,21 @@ def doNumberPlateDetectionCascade(img):
         cv2.rectangle(img, (x,y), (x+w,y+h), (255,0,0), 2) 
     return img
 
-#canny edge detection
-def cannyimg(image):
-    return cv2.Canny(image, 100, 200)
-
-#thresholding
-def thresholding(image):
-    return cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-
-# get grayscale image
-def get_grayscale(image):
-    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
 
 #Grab number plate from image using easyocr
 def doANPR(img):
-    
+
     # Convert int to uint -> np.array
     img = Image.fromarray((img * 255).astype(np.uint8))
     img = np.array(img)
     
-    
-    gray = get_grayscale(img)
-    thresh = thresholding(gray)
-    canny = cannyimg(thresh)
-            
-    st.image(canny)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
     #Perform OCR
     reader = easyocr.Reader(['en']) 
         
-    result = reader.readtext(canny)
-    st.subheader("Number Plate Digits :{}".format(result))
+    result = reader.readtext(gray)
+    st.text("Number Plate Digits :{}".format(result[0][1]))
 
     
     
@@ -202,14 +186,18 @@ def main():
         
         #Crop Number Plate Function Call 
         LpImg = get_plate(original)
+        st.subheader("Character Recognition:")
         if LpImg:
-            st.subheader("Number Plate Detected in the image:")
-            croppedImage = LpImg[0]  
-            
-            st.image(croppedImage, channels="RGB")
-            
-            st.subheader("Character Recognition:")
-            doANPR(croppedImage)
+            st.subheader("Total Number Plate Detected in the image:{}".format(len(LpImg)))
+            for i in range(len(LpImg)):
+                # st.image(LpImg[i])
+                # print("I=",i)
+                # croppedImage = LpImg[i]  
+                
+                # st.image(croppedImage, channels="RGB")
+                
+                
+                doANPR(LpImg[i])
                 
         
         

@@ -20,7 +20,8 @@ import math
 from scipy import spatial
 
 import streamlit as st 
-
+import requests
+import io
 
 # ------------------------- FACE DETECTION MASK On&Off and returns all faces found
 def doMaskOnOffDetection(opencv_image):
@@ -200,36 +201,53 @@ def doANPR(img):
    
 #-------------------------CROP IMAGE TESTING---------------------------------------
 
-## Method to load Keras model weight and structure files
-def load_model(path):
-    try:
-        path = splitext(path)[0]
-        with open('%s.json' % path, 'r') as json_file:
-            model_json = json_file.read()
-        model = model_from_json(model_json, custom_objects={})
-        model.load_weights('%s.h5' % path)
-        print("Model Loaded successfully...")
-        return model
-    except Exception as e:
-        print(e)
+# Update ANPR using Numberplatereco
+def numberplateRecognizer(image):
+    original_image = image
+    #conver the numpy array into an Image type object
+    h , w , c = image.shape
+    image = np.reshape(image,(h,w,c))
+    image = Image.fromarray(image, 'RGB')
 
+    #convert image to bytes as api requests are in that format
+    buf = io.BytesIO()
+    image.save(buf,format = 'JPEG')
+    byte_im = buf.getvalue()
+    
+    response = requests.post(
+        'https://api.platerecognizer.com/v1/plate-reader/',
+        # data=dict(regions='hk'),  # Optional
+        files=dict(upload=byte_im),
+        headers={'Authorization': 'Token f184ad4cc54df68357e7873baea13a1d596ad6e4'}
+    )
+    json_response = response.json()
+    # for key, value in json_response.items():
+    #     st.write(key, "->", value)
+    
+    #Find number of number plate present in the image
+    number_plates = len(json_response['results'])
+    st.subheader("Total Number Plates Detected in this image:{}".format(number_plates))
 
-#Extract NumberPlate Detected Region asImage
-def get_plate(image_path, Dmax=608, Dmin = 608):
-    
-    image_path = cv2.cvtColor(image_path, cv2.COLOR_BGR2RGB)
-    image_path = image_path/255
-    
-    wpod_net_path = "models/wpod-net.json"
-    wpod_net = load_model(wpod_net_path)
-    
-    vehicle = image_path
-    ratio = float(max(vehicle.shape[:2])) / min(vehicle.shape[:2])
-    side = int(ratio * Dmin)
-    bound_dim = min(side, Dmax)
-    _ , LpImg, _, cor = detect_lp(wpod_net, vehicle, bound_dim, lp_threshold=0.5)
-    
-    return LpImg
+    st.subheader("Number Plate Information")
+    # get number plate and borders from the image
+    for plate in json_response['results']:
+        #Get numberplate and borders
+        car_plate = plate['plate']
+        xmin , ymin , xmax , ymax = plate['box'].values()
+        
+        #crop number plate and show borders
+        numberplate_crop = image.crop((xmin , ymin , xmax , ymax))
+        st.image(numberplate_crop)
+        st.write("Number Plate Digits: {}".format(car_plate))
+        
+        # Draw Borders and show numberplate on image
+        cv2.rectangle(original_image, (xmin, ymin), (xmax, ymax),(255,0,0),5)
+        cv2.putText(original_image , car_plate ,(xmin , ymin),fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=1, color=(0, 255, 0))
+        
+        
+    original_image= cv2.cvtColor(original_image ,cv2.COLOR_BGR2RGB )
+    # display number above number plate
+    st.image(original_image)
 
 #----------------------------------------------------------------------------------
 
@@ -261,14 +279,8 @@ def main():
             st.image(image)
         
         if st.button("Do NumberPlate Extraction"):
-            
-            #Crop Number Plate Function Call 
-            LpImg = get_plate(original)
-            st.subheader("Character Recognition:")
-            if LpImg:
-                st.subheader("Total Number Plate Detected in the image:{}".format(len(LpImg)))
-                for i in range(len(LpImg)):         
-                    doANPR(LpImg[i])
+            numberplateRecognizer(original)
+
                     
         
         

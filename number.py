@@ -24,6 +24,10 @@ import requests
 import io
 import base64
 
+#-----------------------------  CACHE DATABASE    -----------------------------------
+database_faces=[None]
+
+
 # ------------------------- FACE DETECTION MASK On&Off and returns all faces found
 def doMaskOnOffDetection(opencv_image):
     prototxtPath = os.path.sep.join(["face_detector", "deploy.prototxt"])
@@ -160,6 +164,7 @@ def doDatabaseIDMapping(faceDetected):
     similarity = -1 * (spatial.distance.cosine(face1, face2) - 1)
     
     return similarity 
+     
         
 #perform face detection with the help of faceplusAPI 
 def dofaceplusAPI(image):
@@ -188,8 +193,7 @@ def dofaceplusAPI(image):
         # send request to API and get detection information
         res = requests.post(http_url, data=payload)
         json_response = res.json()
-        st.write(type(json_response))
-        st.write(json_response)
+
         
         # get face info and draw bounding box 
         # st.write(json_response["faces"])
@@ -197,6 +201,9 @@ def dofaceplusAPI(image):
             # get coordinate, height and width of fece detection
             x , y , w , h = faces["face_rectangle"].values()
             
+            # Note: x<->y coordinate interchange during cropping 
+            face = original_image[x:x+h,y:y+w]
+            # match = check_face(face)
             
             # Draw bounding box 
             cv2.rectangle(original_image, (y , x), (y+w, x+h),(255,0,0),2)
@@ -210,7 +217,23 @@ def dofaceplusAPI(image):
     st.image(original_image)
 # ----------------------------------------------------------------
 
-
+def upload_database_faces():
+    st.text("upload image for database")
+    uploaded_files = st.file_uploader("Choose database images", type="jpg",accept_multiple_files=True)
+    if uploaded_files is not None:
+        for uploaded_file in uploaded_files:
+            # Convert the file to an opencv image.
+            file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+            opencv_image = cv2.imdecode(file_bytes, 1)
+            st.image(opencv_image)
+            database_faces.append(opencv_image)
+            return 
+    else:
+        return
+            
+    
+    
+    
 #---------------------------- Number Plate Detection ------------------------------------
 # Update ANPR using Numberplatereco
 def numberplateRecognizer(image):
@@ -278,8 +301,15 @@ def main():
         st.image(display)
 
         if st.button("Do Face Detection and Face Matching"):
-            # Face detection with the help of face plus plus API 
-            dofaceplusAPI(original)
+            
+            #upload database image for matching 
+            upload_database_faces()
+            
+            
+            if len(database_faces) ==0:
+                dofaceplusAPI(opencv_image)
+                
+            
             
             
             

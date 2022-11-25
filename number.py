@@ -22,6 +22,7 @@ from scipy import spatial
 import streamlit as st 
 import requests
 import io
+import base64
 
 # ------------------------- FACE DETECTION MASK On&Off and returns all faces found
 def doMaskOnOffDetection(opencv_image):
@@ -160,47 +161,57 @@ def doDatabaseIDMapping(faceDetected):
     
     return similarity 
         
+#perform face detection with the help of faceplusAPI 
+def dofaceplusAPI(image):
+    original_image = image
+    http_url = 'https://api-us.faceplusplus.com/facepp/v3/detect'
+    key = "LXCYl-Fuc_erkrCY_iQfhYEYfttcXn4P"
+    secret = "WY6zwvR8wZ42wX621cGvIIo-JC8YN5NS"
+    
+    #conver the numpy array into an Image type object
+    h , w , c = image.shape
+    image = np.reshape(image,(h,w,c))
+    image = Image.fromarray(image, 'RGB')
+
+    #convert image to bytes as api requests are in that format
+    buf = io.BytesIO()
+    image.save(buf,format = 'JPEG')
+    byte_im = base64.b64encode(buf.getvalue())
+    
+    payload = {
+                'api_key': key, 
+                'api_secret': secret, 
+                'image_base64':byte_im,
+                }
+    
+    try:
+        # send request to API and get detection information
+        res = requests.post(http_url, data=payload)
+        json_response = res.json()
+        st.write(type(json_response))
+        st.write(json_response)
         
+        # get face info and draw bounding box 
+        # st.write(json_response["faces"])
+        for faces in json_response["faces"]:
+            # get coordinate, height and width of fece detection
+            x , y , w , h = faces["face_rectangle"].values()
             
+            
+            # Draw bounding box 
+            cv2.rectangle(original_image, (y , x), (y+w, x+h),(255,0,0),2)
+            
+    except Exception as e:
+        print('Error:')
+        print(e) 
+    
+    # Display image with detections
+    original_image= cv2.cvtColor(original_image ,cv2.COLOR_BGR2RGB )
+    st.image(original_image)
 # ----------------------------------------------------------------
 
 
 #---------------------------- Number Plate Detection ------------------------------------
-# Number Plate Detection with Haar Cascade 
-def doNumberPlateDetectionCascade(img):
-    # Load the cascade
-    carplate_haar_cascade = cv2.CascadeClassifier('haarcascade_russian_plate_number.xml')
-
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    carplate_rects = carplate_haar_cascade.detectMultiScale(gray, 1.1, 4)
-    for (x,y,w,h) in carplate_rects: 
-        cv2.rectangle(img, (x,y), (x+w,y+h), (255,0,0), 2) 
-    return img
-
-
-#Grab number plate from image using easyocr
-def doANPR(img):
-
-    # Convert int to uint -> np.array
-    img = Image.fromarray((img * 255).astype(np.uint8))
-    img = np.array(img)
-    
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    st.image(gray)
-
-    #Perform OCR
-    reader = easyocr.Reader(['en']) 
-        
-    result = reader.readtext(gray)
-    numberPlate = ""
-    for item in range(len(result)):
-        numberPlate+=result[item][1]
-        numberPlate+=" "
-    st.text("Number Plate Digits :{}".format(numberPlate))
-
-   
-#-------------------------CROP IMAGE TESTING---------------------------------------
-
 # Update ANPR using Numberplatereco
 def numberplateRecognizer(image):
     original_image = image
@@ -265,18 +276,19 @@ def main():
         opencv_image = cv2.imdecode(file_bytes, 1)
         display = cv2.cvtColor(opencv_image, cv2.COLOR_BGR2RGB)
         st.image(display)
-        
-        # with st.sidebar:
-        #     st.button("Do Face Detection and Face Matching")
-        #     st.button("Do NumberPlate Extraction")
-    
+
         if st.button("Do Face Detection and Face Matching"):
-            #Face Detection with and without Mask 
-            image = doMaskOnOffDetection(display)
-            # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            st.subheader("Face Detection and matching Algorithm")
-            st.text("People who are present in the database will be highlighted in green")
-            st.image(image)
+            # Face detection with the help of face plus plus API 
+            dofaceplusAPI(original)
+            
+            
+            
+            # #Face Detection with and without Mask 
+            # image = doMaskOnOffDetection(display)
+            # # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            # st.subheader("Face Detection and matching Algorithm")
+            # st.text("People who are present in the database will be highlighted in green")
+            # st.image(image)
         
         if st.button("Do NumberPlate Extraction"):
             numberplateRecognizer(original)

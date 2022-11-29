@@ -16,4 +16,4 @@ After installing the necessary files you can acess the dashboard with the follow
 streamlit run number.py
 ```
 
-Acess the dashboard on streamlit cloud : 
+Acess the dashboard on streamlit cloud : https://m-dhal-construction-demo-number-qrlcae.streamlit.app/

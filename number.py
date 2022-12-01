@@ -71,15 +71,19 @@ def dofaceplusAPI(image):
             
             # Compare cropped face with faces present in the database
             match = check_face(face)
-            
+            percentage=match*100
             # select color for matched faces
-            if match: 
+            if percentage>95: 
                 color = (0, 255, 0)
             else: 
                 color = (255, 0 , 0)
                 
             # Draw bounding box 
             cv2.rectangle(original_image, (y , x), (y+w, x+h),color,2)
+            match = str(round(percentage,2))
+            cv2.putText(original_image , match ,(y , x),fontFace=cv2.FONT_HERSHEY_COMPLEX, fontScale=1, color=(0, 95, 255))
+            
+            
             
     except Exception as e:
         print('Error:')
@@ -97,6 +101,7 @@ def check_face(face):
     key = "LXCYl-Fuc_erkrCY_iQfhYEYfttcXn4P"
     secret = "WY6zwvR8wZ42wX621cGvIIo-JC8YN5NS"
     
+    max_Similariy = 0
     for image in database_faces:
         original_img = image
         # perform face detection on the faces in database 
@@ -154,16 +159,16 @@ def check_face(face):
                 face2 = face2.flatten()
                 face2 = face2/255
                 
-                similarity = -1 * (spatial.distance.cosine(face1, face2) - 1)
+                sim = -1 * (spatial.distance.cosine(face1, face2) - 1)
                                 
-                if similarity >0.95:
-                    return True                
+                if sim >max_Similariy:
+                    max_Similariy = sim              
                 
         except Exception as e:
             print('Error:')
             print(e) 
             
-        return False
+    return max_Similariy
 
 
 # Upload images in to database which will be used for ID purpose 

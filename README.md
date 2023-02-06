@@ -1,6 +1,6 @@
 # construction-demo
 
-This project includes all the necessary files required for Performing crowd counting . You can run the project locally yourself or acess the streamlit dashboard hosted at streamlit.cloud
+This project includes all the necessary files required for Performing Facial recognition and Number Plate extraction in Vehicles . You can run the project locally yourself or acess the streamlit dashboard hosted at streamlit.cloud
 # How to use it
 Make sure you can conda or other virtual environment installed
 ### Setup
